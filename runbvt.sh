@@ -13,7 +13,14 @@ fi
 if [[ ! -d ${HOME}/VoodooGrimoire ]]; then
     git clone git@github.com:sugareps/VoodooGrimoire.git
 fi
+
 cd ${HOME}/VoodooGrimoire
+git reset --hard
+
+git fetch origin
+
+#local n_br_nm="${INSTALL_NAME}"_$(date "+%s")
+git checkout -b "${br_number}" origin/"${VoodooGrimoire_Branch}"
 
 # if [ ! -d VoodooGrimoire ];then
 #     git clone git@github.com:sugareps/VoodooGrimoire.git
