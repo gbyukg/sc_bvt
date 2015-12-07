@@ -19,7 +19,7 @@ git reset --hard
 
 git fetch origin
 
-#local n_br_nm="${INSTALL_NAME}"_$(date "+%s")
+br_number=$(date "+%s")
 git checkout -b "${br_number}" origin/"${VoodooGrimoire_Branch}"
 
 # if [ ! -d VoodooGrimoire ];then
@@ -71,8 +71,10 @@ git checkout -b "${br_number}" origin/"${VoodooGrimoire_Branch}"
     if [ ! -z ${test_class} ];then
         mvn test -Dtest=${test_class} -Duser.timezone=Asia/Shanghai -P ci
     else
-        if [ x"${bvt_module}" = x"all" ];then
-            mvn test -Duser.timezone=Asia/Shanghai -P ci
+        if [[ -n "${MODULES}" ]]; then
+            mvn test -Dtest="${MODULES}" -Duser.timezone=Asia/Shanghai -P ci
+        elif [ x"${bvt_module}" = x"all" ];then
+            mvn test -Dtest="${MODULES}" -Duser.timezone=Asia/Shanghai -P ci
         else
             mvn test -Dtest=bvt.${bvt_module}.* -Duser.timezone=Asia/Shanghai -P ci
         fi
