@@ -234,7 +234,7 @@ int main(int argc, char **argv)
         }
     }
 
-    // 等待所以子进程结束
+    // 等待所有子进程结束
     while(proc != maxProc) {
         /*printf("Current procs is : %d\n", proc);*/
         if (sigsuspend(&block_sig) == -1 && errno != EINTR)
