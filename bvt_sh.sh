@@ -2,6 +2,15 @@
 
 export VOODOO_PATH=$HOME/workspace/BVT_RUNNER
 
+# 设置显示窗口
+if [[ true == "${MONITOR}" ]]; then
+    if [[ -z "${CUS_DISPLAY}" ]]; then
+        echo "DISPLAY can not be NULL!"
+        exit 1
+    fi
+    export DISPLAY="${CUS_DISPLAY}"
+fi
+
 br_number=$(date "+%s")
 
 git reset --hard

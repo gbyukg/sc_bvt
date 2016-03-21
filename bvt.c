@@ -187,7 +187,7 @@ int main(int argc, char **argv)
                 if (chdir(getenv("VOODOO_PATH")) == -1)
                     errExit("chdir wrong!");
 
-                printf("Start run module [%s] ...\n", curNode->module);
+                printf("Starting to run module [%s] ...\n", curNode->module);
 
                 // 为了 jenkins 能正确输出
                 fflush(NULL);
