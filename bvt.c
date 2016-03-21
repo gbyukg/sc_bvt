@@ -82,6 +82,7 @@ sigchldHandler(int sig)
         errExit("waitpid wrong");
 
     errno = savedErrno;
+    fflush(NULL);
 }
 
 void

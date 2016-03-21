@@ -49,4 +49,5 @@ $HOME/sc_bvt/bvt $params
 
 echo "\n\n\n\n=========================== General report... ========================================="
 mvn site surefire-report:report-only -Duser.timezone=Asia/Shanghai -DskipTests=true -P ci
+git clean -f -d
 git reset --hard
