@@ -27,6 +27,7 @@ git checkout -b "${br_number}" origin/"${VoodooGrimoire_Branch}"
 # else
 #     cd VoodooGrimoire
 
+sed -i '/\*\*\/test\/bvt\/\*\*\/\*\.java/a<include>\*\*\/test\/regression\/\*\*\/\*\.java<\/include>' pom.xml
     # 使用火狐浏览器测试
     ruby -pi -e "gsub(/automation.interface.*/, 'automation.interface = firefox')" src/test/resources/voodoo.properties
     # 指定浏览器位置
