@@ -10,14 +10,14 @@ if [[ true == "${MONITOR}" ]]; then
 fi
 
 # clone Voodoo 代码库
-if [[ ! -d ${HOME}/VoodooGrimoire ]]; then
-    git clone git@github.com:sugareps/VoodooGrimoire.git
-fi
+#if [[ ! -d ${HOME}/VoodooGrimoire ]]; then
+    #git clone git@github.com:sugareps/VoodooGrimoire.git
+#fi
 
-cd ${HOME}/VoodooGrimoire
+#cd ${HOME}/VoodooGrimoire
 git reset --hard
 
-git fetch origin
+#git fetch origin
 
 br_number=$(date "+%s")
 git checkout -b "${br_number}" origin/"${VoodooGrimoire_Branch}"
