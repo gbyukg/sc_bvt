@@ -17,7 +17,10 @@ git reset --hard
 git checkout -b "${br_number}" origin/"${VoodooGrimoire_Branch}"
 
 # 增加 regression 测试目录
-sed -i '/\*\*\/test\/bvt\/\*\*\/\*\.java/a<include>\*\*\/test\/regression\/\*\*\/\*\.java<\/include>' pom.xml
+if [[ "Xregression" == X"${CLASS}" ]]; then
+    # sed -i '/\*\*\/test\/bvt\/\*\*\/\*\.java/a<include>\*\*\/test\/regression\/\*\*\/\*\.java<\/include>' pom.xml
+    sed -i 's/\/test\/bvt/\/test\/regression/g' pom.xml
+fi
 
 ruby -pi -e "gsub(/automation.interface.*/, 'automation.interface = firefox')" src/test/resources/voodoo.properties
 ruby -pi -e "gsub(/browser.firefox_binary.*/, 'browser.firefox_binary = /usr/bin/firefox')" src/test/resources/voodoo.properties
@@ -44,7 +47,7 @@ if [ ! -z "${test_class}" ];then
     mvn test -Dtest=${test_class} -Duser.timezone=Asia/Shanghai -P ci
 else
     for mod in ${bvt_module}; do
-        params="$params -m \"bvt.$mod.*\""
+        params="$params -m \"$CLASS.$mod.*\""
     done
 fi
 

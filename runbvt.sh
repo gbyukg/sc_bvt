@@ -27,7 +27,10 @@ git checkout -b "${br_number}" origin/"${VoodooGrimoire_Branch}"
 # else
 #     cd VoodooGrimoire
 
-sed -i '/\*\*\/test\/bvt\/\*\*\/\*\.java/a<include>\*\*\/test\/regression\/\*\*\/\*\.java<\/include>' pom.xml
+if [[ "Xregression" == X"${CLASS}" ]]; then
+    # sed -i '/\*\*\/test\/bvt\/\*\*\/\*\.java/a<include>\*\*\/test\/regression\/\*\*\/\*\.java<\/include>' pom.xml
+    sed -i 's/\/test\/bvt/\/test\/regression/g' pom.xml
+fi
     # 使用火狐浏览器测试
     ruby -pi -e "gsub(/automation.interface.*/, 'automation.interface = firefox')" src/test/resources/voodoo.properties
     # 指定浏览器位置
@@ -77,7 +80,7 @@ sed -i '/\*\*\/test\/bvt\/\*\*\/\*\.java/a<include>\*\*\/test\/regression\/\*\*\
         elif [ x"${bvt_module}" = x"all" ];then
             mvn test -Dtest="${MODULES}" -Duser.timezone=Asia/Shanghai -P ci
         else
-            mvn test -Dtest=bvt.${bvt_module}.* -Duser.timezone=Asia/Shanghai -P ci
+            mvn test -Dtest=${CLASS}.${bvt_module}.* -Duser.timezone=Asia/Shanghai -P ci
         fi
     fi
     mvn site surefire-report:report-only -Duser.timezone=Asia/Shanghai -DskipTests=true -P ci
