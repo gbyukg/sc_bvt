@@ -227,6 +227,8 @@ int main(int argc, char **argv)
                     printf("Getting Max child process limit(%d), waiting...\n",
                             maxProc);
 
+                    fflush(NULL);
+
                     // 解除并开始捕获信号
                     if (sigsuspend(&block_sig) == -1 && errno != EINTR)
                         perror("sigsuspend wrong!");
