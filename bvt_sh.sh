@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export VOODOO_PATH=$HOME/workspace/BVT_RUNNER
+export VOODOO_PATH=$HOME/workspace/${JOB_NAME}
 
 # 设置显示窗口
 if [[ true == "${MONITOR}" ]]; then

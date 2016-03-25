@@ -57,6 +57,7 @@ static void
 sigchldHandler(int sig)
 {
     int status, savedErrno;
+    Node *curNode = NULL;
     pid_t childPid;
 
     savedErrno = errno;
@@ -64,12 +65,19 @@ sigchldHandler(int sig)
     // 当执行到次函数中时, 有可能会有其他子进程同时结束执行,
     // 因此在此需要捕获一下是否有子进程已经结束执行.
     while ((childPid = waitpid(-1, &status, WNOHANG)) > 0) {
+        curNode = NULL;
         proc += 1;
+
+        for (curNode = modNode; curNode != NULL; curNode = curNode->pNext) {
+            if (curNode->pid == childPid) {
+                break;
+            }
+        }
 
         // 获取 module 名
         // modNode->module;
         if (WIFEXITED(status))
-            printf("[%d] exited, status = %d\n", childPid, status);
+            printf("[%d] %s exited, status = %d\n", childPid, curNode->module, status);
         else if (WIFSIGNALED(status))
             printf("child killed by signal %d (%s)",
                     WTERMSIG(status), strsignal(WTERMSIG(status)));

@@ -130,7 +130,6 @@ int main(int argc, char **argv)
         /*snprintf(seqNumStr, INT_LEN, "%d\n", seqNum);*/
 
         for (curMod = seqNum; ((curMod < seqNum+reqLen) && (curMod < argc)); curMod++) {
-            sleep(1);
             snprintf(seqNumStr, INT_LEN, "%s ", argv[curMod]);
             if (write(cfd, &seqNumStr, strlen(seqNumStr)) != strlen(seqNumStr))
                 fprintf(stderr, "Error on write");
