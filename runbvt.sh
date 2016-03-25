@@ -1,5 +1,5 @@
 #!/bin/bash
-set +x
+set -x
 
 if [[ true == "${MONITOR}" ]]; then
     if [[ -z "${CUS_DISPLAY}" ]]; then
@@ -78,7 +78,7 @@ fi
         if [[ -n "${MODULES}" ]]; then
             mvn test -Dtest="${MODULES}" -Duser.timezone=Asia/Shanghai -P ci
         elif [ x"${bvt_module}" = x"all" ];then
-            mvn test -Dtest="${MODULES}" -Duser.timezone=Asia/Shanghai -P ci
+            mvn test -Duser.timezone=Asia/Shanghai -P ci
         else
             mvn test -Dtest=${CLASS}.${bvt_module}.* -Duser.timezone=Asia/Shanghai -P ci
         fi
