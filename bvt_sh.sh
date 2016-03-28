@@ -2,6 +2,8 @@
 
 export VOODOO_PATH=$HOME/workspace/${JOB_NAME}
 
+set -x
+
 # 设置显示窗口
 if [[ true == "${MONITOR}" ]]; then
     if [[ -z "${CUS_DISPLAY}" ]]; then
@@ -43,9 +45,9 @@ fi
 
 if [ ! -z "${test_class}" ];then
     for class in ${test_class}; do
-        params=$params "-m ${test_class}"
+        params="$params -m \"${test_class}\""
     done
-    mvn test -Dtest=${test_class} -Duser.timezone=Asia/Shanghai -P ci
+    #mvn test -Dtest=${test_class} -Duser.timezone=Asia/Shanghai -P ci
 else
     for mod in ${bvt_module}; do
         params="$params -m \"$CLASS.$mod.*\""
