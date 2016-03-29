@@ -12,3 +12,18 @@ scp -r /home/btit/VoodooGrimoire/log/screenshots stallman@9.119.106.38:/var/www/
 echo "************************* screenshots ********************"
 echo "http://9.119.106.38/bvt_screenshots/${BUILD_NUMBER}/screenshots/"
 ```
+
+### jenkins 触发其他 job 不成功
+配置 jenkins 的 `Configure Global Security` -> `Access Control for Builds` ->
+`Project default Build Authorization` -> `Run as User who Triggered Build`
+
+### 服务器端的 server 启动后, telnet 不成功:
+``` sh
+#1.Check iptable rules.
+iptables -L
+
+2.Flush iptables
+iptables -F
+
+#Try telnet again
+```

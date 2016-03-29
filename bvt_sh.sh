@@ -14,6 +14,9 @@ if [[ true == "${MONITOR}" ]]; then
     export DISPLAY="${CUS_DISPLAY}"
 fi
 
+if [[ ! -d $HOME/VoodooGrimoire ]]; then
+    git clone git@github.com:sugareps/VoodooGrimoire.git $HOME/VoodooGrimoire
+fi
 cd $HOME/VoodooGrimoire
 git fetch origin
 br_number=$(date "+%s")
@@ -46,10 +49,12 @@ else
     mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
 fi
 
-
 #$HOME/sc_bvt/bvt $params
 /*$HOME/sc_bvt/client -i 9.119.106.212 -t 59999 -p 1*/
 $HOME/sc_bvt/client -i ${SERVER_IP} -t ${SERVER_PORT} -p 1
 
 echo "\n\n\n\n=========================== General report... ========================================="
 mvn site surefire-report:report-only -Duser.timezone=Asia/Shanghai -DskipTests=true -P ci
+
+rm -rf ${WORKSPACE}/surefire-reports
+cp -r ${VOODOO_PATH}/target/surefire-reports/ ${WORKSPACE}

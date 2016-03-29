@@ -4,20 +4,34 @@
 #include <errno.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <sys/un.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
+
 #define PORT_NUM "59999"
 #define BACKLOG 50
 #define INT_LEN 30
+
+void errExit(char *);
+
+
+ssize_t
+readLine(int, void *, size_t);
+
+int
+becomeDeamon();
+
 void errExit(char *msg)
 {
     extern int errno;
     perror(msg);
     exit(errno);
 }
+
 ssize_t
 readLine(int fd, void *buffer, size_t n)
 {
@@ -55,6 +69,43 @@ readLine(int fd, void *buffer, size_t n)
     *buf = '\0';
     return totRead;
 }
+
+int
+becomeDeamon()
+{
+    int maxfd, fd;
+
+    switch (fork()) {
+        case -1: return -1;
+        case 0: break;
+        default: _exit(EXIT_SUCCESS);
+    }
+
+    if (setsid() == -1)
+        return -1;
+
+    switch (fork()) {
+        case -1: return -1;
+        case 0: break;
+        default: _exit(EXIT_SUCCESS);
+    }
+
+    umask(0);
+    chdir("/");
+
+    close(STDIN_FILENO);
+
+    fd = open("/dev/null", O_RDWR);
+    if (fd != STDIN_FILENO)
+        return -1;
+    if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO)
+        return -1;
+    if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO)
+        return -1;
+
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     uint32_t seqNum;
@@ -69,6 +120,10 @@ int main(int argc, char **argv)
     char host[NI_MAXHOST];
     char service[NI_MAXSERV];
     seqNum = 1, curMod = 0;
+
+    if (becomeDeamon() != 0)
+        errExit("become deamon wrong!");
+
     // 忽略信号
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
         errExit("signal");
@@ -105,8 +160,8 @@ int main(int argc, char **argv)
     freeaddrinfo(result);
 
     // 当全部参数读取完毕后, 关闭服务端程序
-    while (seqNum < argc) {
-    /*while (1) {*/
+    /*while (seqNum < argc) {*/
+    while (1) {
         addrlen = sizeof(struct sockaddr_storage);
         cfd = accept(lfd, (struct sockaddr *)&claddr, &addrlen);
         if (cfd == -1) {
