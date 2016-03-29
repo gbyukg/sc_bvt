@@ -105,8 +105,8 @@ int main(int argc, char **argv)
     freeaddrinfo(result);
 
     // 当全部参数读取完毕后, 关闭服务端程序
-    /*while (seqNum < argc) {*/
-    while (1) {
+    while (seqNum < argc) {
+    /*while (1) {*/
         addrlen = sizeof(struct sockaddr_storage);
         cfd = accept(lfd, (struct sockaddr *)&claddr, &addrlen);
         if (cfd == -1) {
@@ -117,7 +117,9 @@ int main(int argc, char **argv)
             snprintf(addrStr, ADDRSTRLEN, "(%s, %s)", host, service);
         else
             snprintf(addrStr, ADDRSTRLEN, "(?NUKNOWN?)");
-        printf("Connection from %s\n", addrStr);
+
+        // 需要写 log
+        /*printf("Connection from %s\n", addrStr);*/
         if (readLine(cfd, reqLenStr, INT_LEN) <= 0) {
             close(cfd);
             continue;
@@ -133,7 +135,9 @@ int main(int argc, char **argv)
             snprintf(seqNumStr, INT_LEN, "%s ", argv[curMod]);
             if (write(cfd, &seqNumStr, strlen(seqNumStr)) != strlen(seqNumStr))
                 fprintf(stderr, "Error on write");
-            printf("%s\n", seqNumStr);
+
+            // 需要写 log
+            /*printf("%s\n", seqNumStr);*/
         }
         seqNum += reqLen;
 

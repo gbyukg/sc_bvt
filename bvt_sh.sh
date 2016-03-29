@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-export VOODOO_PATH=$HOME/workspace/${JOB_NAME}
+#export VOODOO_PATH=$HOME/workspace/${JOB_NAME}
+export VOODOO_PATH=$HOME/VoodooGrimoire
 
 set -x
 
@@ -13,6 +14,8 @@ if [[ true == "${MONITOR}" ]]; then
     export DISPLAY="${CUS_DISPLAY}"
 fi
 
+cd $HOME/VoodooGrimoire
+git fetch origin
 br_number=$(date "+%s")
 
 git clean -f -d
@@ -43,18 +46,10 @@ else
     mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
 fi
 
-if [ ! -z "${test_class}" ];then
-    for class in ${test_class}; do
-        params="$params -m \"${test_class}\""
-    done
-    #mvn test -Dtest=${test_class} -Duser.timezone=Asia/Shanghai -P ci
-else
-    for mod in ${bvt_module}; do
-        params="$params -m \"$CLASS.$mod.*\""
-    done
-fi
 
-$HOME/sc_bvt/bvt $params
+#$HOME/sc_bvt/bvt $params
+/*$HOME/sc_bvt/client -i 9.119.106.212 -t 59999 -p 1*/
+$HOME/sc_bvt/client -i ${SERVER_IP} -t ${SERVER_PORT} -p 1
 
 echo "\n\n\n\n=========================== General report... ========================================="
 mvn site surefire-report:report-only -Duser.timezone=Asia/Shanghai -DskipTests=true -P ci

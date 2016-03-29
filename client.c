@@ -26,6 +26,8 @@ extern int errno;
 int maxProc = 5; // 最大进程数, 默认5
 volatile sig_atomic_t proc = 5;
 char voodoo_path[512];
+char SERVER_IP[64] = "127.0.0.1";
+char SERVER_PORT[8] = "59999";
 Node *modNode = NULL;
 
 static void
@@ -142,11 +144,12 @@ sigchldHandler(int sig)
 void
 parse_param(int argc, char **argv, Node **modNode) {
     int opt, indexptr, maxProc_tmp;
-    char *const short_opt = "p:m:";
-    Node *new_node = NULL, *current = NULL;
+    char *const short_opt = "p:i:t:";
     struct option long_options[] =
     {
         {"proc",         required_argument, 0, 'p'},
+        {"ip",           required_argument, 0, 'i'},
+        {"port",         required_argument, 0, 't'},
         /*{"modules",      required_argument, 0, 'm'},*/
         {"command",      required_argument, 0, 'c'},
         {"help",         no_argument, 0, 'h'},
@@ -157,8 +160,14 @@ parse_param(int argc, char **argv, Node **modNode) {
         switch(opt) {
             case 'p':
                 maxProc_tmp = atoi(optarg);
-                if (maxProc_tmp > MIN_PROC && maxProc_tmp <= MAX_PROC)
+                if (maxProc_tmp >= MIN_PROC && maxProc_tmp <= MAX_PROC)
                     maxProc = maxProc_tmp;
+                break;
+            case 'i':
+                strncpy(SERVER_IP, optarg, 63);
+                break;
+            case 't':
+                strncpy(SERVER_PORT, optarg, 7);
                 break;
             case 'c':
                 break;
@@ -204,7 +213,7 @@ int analisis_mods(char *modules, Node **modNode)
     return modCounts;
 }
 
-int getMods(const char *ip, const char *port_num, int proc, Node **modNode)
+int getMods(int proc, Node **modNode)
 {
     char reqLenStr[4];
     char seqNumStr[INT_LEN];
@@ -220,7 +229,7 @@ int getMods(const char *ip, const char *port_num, int proc, Node **modNode)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_NUMERICSERV;
 
-    if (getaddrinfo(ip, port_num, &hints, &result) != 0)
+    if (getaddrinfo(SERVER_IP, SERVER_PORT, &hints, &result) != 0)
         errExit("getaddrinfo wrong");
 
     cfd = 0;
@@ -248,34 +257,30 @@ int getMods(const char *ip, const char *port_num, int proc, Node **modNode)
     if (numRead == 0)
         errExit("Unexpected EOF from server");
 
-    if (seqNumStr[numRead - 1] == '\n') {
-        // 删掉最后的换行符, 难受, 真想回家睡觉去...
-        seqNumStr[numRead - 2] = '\0';
-
-        if (numRead != 1)
-            moduleCounts = analisis_mods(seqNumStr, modNode);
+    // 如果只返回了一个字节, 则说明服务器端仅仅返回了一个换行符
+    if (numRead == 1) {
         printf("no more modules, numRead is: %ld\n", numRead);
         close(cfd);
-    } else {
-        moduleCounts = analisis_mods(seqNumStr, modNode);
+        // 直接返回0
+        return moduleCounts;
+    } else if (seqNumStr[numRead - 1] == '\n') {
+        // 如果最后一个字符是换行符, 则是服务器端返回的最后一组模块
+        // 此处需要删除换行符和换行符前面的空格.
+        seqNumStr[numRead - 2] = '\0';
     }
-
-
+    moduleCounts = analisis_mods(seqNumStr, modNode);
     close(cfd);
-
     return moduleCounts;
 }
 
 int main(int argc, char **argv)
 {
     errno = 0;
-    const char *ip = "127.0.0.1";
-    const char *port_num = "59999";
     Node *curNode = NULL;
     struct sigaction sa;
     sigset_t block_sig, child_sig, orign_sig;
 
-    /*parse_param(argc, argv, &modNode);*/
+    parse_param(argc, argv, &modNode);
 
     proc = maxProc;
 
@@ -299,7 +304,7 @@ int main(int argc, char **argv)
         modNode = NULL;
 
         // 获取 modules 链表
-        if (getMods(ip, port_num, proc, &modNode) == 0)
+        if (getMods(proc, &modNode) == 0)
             break;
 
         pid_t childPid;
@@ -311,8 +316,7 @@ int main(int argc, char **argv)
             // 设置要执行的命令
             char bvt_com[512] = "";
             snprintf(bvt_com, 511,
-                     "mvn test -Dtest=%s -Duser.timezone=Asia/Shanghai -P ci > %s 2>&1",
-                     curNode->module,
+                     "mvn test -Dtest=%s -Duser.timezone=Asia/Shanghai -P ci",
                      curNode->module);
 
             // 阻塞 SIGCHLD 信号
@@ -329,17 +333,17 @@ int main(int argc, char **argv)
                     signal(SIGCHLD, SIG_DFL);
 
                     // 更改执行目录
-                    /*if (chdir(getenv("VOODOO_PATH")) == -1)*/
-                        /*errExit("chdir wrong!");*/
+                    if (chdir(getenv("VOODOO_PATH")) == -1)
+                        errExit("chdir wrong!");
 
                     printf("Starting to run module [%s] ...\n", curNode->module);
+                    printf("[%s]\n", bvt_com);
 
                     // 为了 jenkins 能正确输出
                     fflush(NULL);
 
                     // 开始执行 BVT 脚本
-                    /*execlp("sh", "sh", "-c", bvt_com, (char *)0);*/
-                    execlp("sh", "sh", "-c", "pwd", (char *)0);
+                    execlp("sh", "sh", "-c", bvt_com, (char *)0);
 
                     switch (errno) {
                         case EACCES:
