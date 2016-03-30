@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,8 +7,8 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <sys/socket.h>
 #include <netdb.h>
+#include <sys/socket.h>
 #include <sys/un.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
@@ -16,14 +17,40 @@
 #define BACKLOG 50
 #define INT_LEN 30
 
-void errExit(char *);
+typedef struct Node{
+    char module[64];
+    int runned;
+    pid_t pid;
+    struct Node *pNext;
+}Node;
 
+const char *pid_file = "/home/btit/sc_bvt/bvt_server.pid";
+const char *module_file = "/home/btit/sc_bvt/modules.txt";
+/*const char *pid_file = "/Users/gbyukg/work/ci/sc_bvt/bvt_server.pid";*/
+/*const char *module_file = "/Users/gbyukg/work/ci/sc_bvt/modules.txt";*/
+Node *modNode = NULL;
+volatile sig_atomic_t moduleCount = 0;
+volatile sig_atomic_t seqNum = 0;
+
+void errExit(char *);
 
 ssize_t
 readLine(int, void *, size_t);
 
 int
 becomeDeamon();
+
+void
+getModules();
+
+void
+server_exit(void);
+
+void
+write_pid(void);
+
+static void
+sigusr1Handler(int);
 
 void errExit(char *msg)
 {
@@ -73,7 +100,7 @@ readLine(int fd, void *buffer, size_t n)
 int
 becomeDeamon()
 {
-    int maxfd, fd;
+    int fd;
 
     switch (fork()) {
         case -1: return -1;
@@ -93,6 +120,9 @@ becomeDeamon()
     umask(0);
     chdir("/");
 
+    // 写入 pid 文件
+    write_pid();
+
     close(STDIN_FILENO);
 
     fd = open("/dev/null", O_RDWR);
@@ -106,12 +136,88 @@ becomeDeamon()
     return 0;
 }
 
+void
+write_pid(void)
+{
+    int pid_fd;
+    char pid_buf[16];
+    memset(pid_buf, '\0', sizeof(pid_buf));
+
+    if ((pid_fd = open(pid_file, O_RDWR|O_TRUNC|O_CLOEXEC|O_CREAT, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) == -1)
+        errExit("Open pid file failed");
+
+    snprintf(pid_buf, 16, "%d\n", getpid());
+
+    if ((write(pid_fd, pid_buf, 16)) < 0)
+        errExit("Write pid file wrong");
+
+    close(pid_fd);
+
+    // 注册退出函数
+    if (atexit(server_exit) != 0)
+        errExit("atexit wrong");
+}
+
+void
+server_exit(void)
+{
+    unlink(pid_file);
+}
+
+void
+getModules()
+{
+    FILE *fp;
+    char *module= NULL;
+    size_t len = 0;
+    ssize_t read;
+    // 重新初始化
+    modNode = NULL;
+    Node *new_node = NULL, *current = NULL;
+    moduleCount = seqNum = 0; // 初始化读取的模块数
+
+    // 打开模块文件读取所有模块
+    if ((fp = fopen(module_file, "r")) == NULL)
+        errExit("Open modules file wrong!");
+
+    // 开始读取文件获取所有模块
+    while ((read = getline(&module, &len, fp)) != -1) {
+        // 去掉每一行结尾的换行符
+        module[read - 1] = '\0';
+
+        if ((new_node = (Node*)malloc(sizeof(Node))) == NULL)
+            errExit("malloc wrong!");
+
+        strncpy(new_node->module, module, 63);
+        new_node->runned = 0;
+        new_node->pid = 0;
+        new_node->pNext = NULL;
+
+        if (modNode == NULL) {
+            modNode = new_node;
+            current = new_node;
+        } else {
+            current->pNext = new_node;
+            current = new_node;
+        }
+        moduleCount++;
+    }
+
+    free(module);
+    fclose(fp);
+}
+
+static void
+sigusr1Handler(int sig)
+{
+    getModules();
+}
+
 int main(int argc, char **argv)
 {
-    uint32_t seqNum;
     struct addrinfo hints, *result, *rp;
     struct sockaddr_storage claddr;
-    int lfd, cfd, optval, reqLen, curMod;
+    int lfd = 0, cfd, optval, reqLen, curMod = 0;
     socklen_t addrlen;
 #define ADDRSTRLEN (NI_MAXHOST + NI_MAXSERV + 10)
     char reqLenStr[INT_LEN];
@@ -119,8 +225,25 @@ int main(int argc, char **argv)
     char addrStr[ADDRSTRLEN];
     char host[NI_MAXHOST];
     char service[NI_MAXSERV];
-    seqNum = 1, curMod = 0;
 
+    // 阻塞 USR1 信号
+    sigset_t usr1_set, emp_set;
+    sigemptyset(&usr1_set);
+    sigemptyset(&emp_set);
+    sigaddset(&usr1_set, SIGUSR1);
+
+    // usr1 信号
+    struct sigaction usr1sa;
+
+    // 设置 USR1 信号
+    sigemptyset(&usr1sa.sa_mask);
+    usr1sa.sa_flags = 0;
+    usr1sa.sa_handler = sigusr1Handler;
+
+    if (sigaction(SIGUSR1, &usr1sa, NULL) == -1)
+        errExit("sigaction SIGUSR1 wrong");
+
+    // 转换成守护进程
     if (becomeDeamon() != 0)
         errExit("become deamon wrong!");
 
@@ -143,7 +266,7 @@ int main(int argc, char **argv)
             // 如果获取 socket 失败, 则继续尝试获取下一个
             continue;
         if (setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval))
-                == -1)
+            == -1)
             errExit("setsockopt wrong");
         if (bind(lfd, rp->ai_addr, rp->ai_addrlen) == 0)
             break;
@@ -159,15 +282,19 @@ int main(int argc, char **argv)
     // 释放 result
     freeaddrinfo(result);
 
-    // 当全部参数读取完毕后, 关闭服务端程序
-    /*while (seqNum < argc) {*/
     while (1) {
         addrlen = sizeof(struct sockaddr_storage);
         cfd = accept(lfd, (struct sockaddr *)&claddr, &addrlen);
         if (cfd == -1) {
-            perror("accept wrong");
+            if (errno != EINTR)
+                perror("accept wrong");
             continue;
         }
+
+        // 需要阻塞 USR1 信号, 防止正在处理 modules 时获取到 USR1 信号, 重置获取到的 module
+        if (sigprocmask(SIG_SETMASK, &usr1_set, NULL) == -1)
+            errExit("sigprocmask wrong");
+
         if (getnameinfo((struct sockaddr *)&claddr, addrlen, host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0)
             snprintf(addrStr, ADDRSTRLEN, "(%s, %s)", host, service);
         else
@@ -179,24 +306,35 @@ int main(int argc, char **argv)
             close(cfd);
             continue;
         }
+        // 获取客户端需要读取的模块数
         reqLen = atoi(reqLenStr);
         if (reqLen <= 0) {
-             close(cfd);
-             continue;
+            close(cfd);
+            continue;
         }
         /*snprintf(seqNumStr, INT_LEN, "%d\n", seqNum);*/
 
-        for (curMod = seqNum; ((curMod < seqNum+reqLen) && (curMod < argc)); curMod++) {
-            snprintf(seqNumStr, INT_LEN, "%s ", argv[curMod]);
+        for (curMod = seqNum; ((curMod < seqNum+reqLen) && (curMod < moduleCount) && modNode != NULL); curMod++) {
+            snprintf(seqNumStr, INT_LEN, "%s ", modNode->module);
+            // 切记需要释放资源
+            free(modNode);
+
             if (write(cfd, &seqNumStr, strlen(seqNumStr)) != strlen(seqNumStr))
                 fprintf(stderr, "Error on write");
+
+            // 指向下一节点
+            modNode = modNode->pNext;
 
             // 需要写 log
             /*printf("%s\n", seqNumStr);*/
         }
         seqNum += reqLen;
 
-        if (seqNum >= argc ) {
+        if (seqNum > moduleCount ) {
+            // 当所有模块全部都去完毕后, 恢复 USR1 信号的阻塞状态
+            if (sigprocmask(SIG_SETMASK, &emp_set, NULL) == -1)
+                errExit("sigprocmask wrong");
+
             snprintf(seqNumStr, INT_LEN, "%c", '\n');
             if (write(cfd, &seqNumStr, strlen(seqNumStr)) != strlen(seqNumStr))
                 fprintf(stderr, "Error on write");
@@ -204,6 +342,6 @@ int main(int argc, char **argv)
         if (close(cfd) == -1)
             errExit("close wrong");
     }
-    /*if (listen(lfd, SOMAXCONN) == 0)*/
+
     return EXIT_SUCCESS;
 }

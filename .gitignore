@@ -1,3 +1,5 @@
 *.dSYM
+*.pid
 server
 client
+modules.txt
