@@ -42,6 +42,8 @@ ruby -pi -e "gsub(/throw new Exception.*Not all records are indexed.*/, '')" src
 rm -rf target/surefire-reports/*
 
 if [ x"${skip_SugarInit}" = x"false" ];then
+    # -Dtest=sugarinit.SugarInit
+    # -Dtest=sugarinit.SugarInitSC4BP
     mvn clean install -Dtest=sugarinit.SugarInit -Dcode_coverage=1 -Duser.timezone=Asia/Shanghai -P ci
 else
     mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci

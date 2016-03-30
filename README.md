@@ -1,5 +1,11 @@
 jenkins 脚本执行文件
 
+# server
+首先启动 server 服务, 通过 `USR1` 信号让 server 读取 modules.txt 文件获取需要测试的模块
+
+# client
+client -i server 的 ip地址 -t 端口号 -p 并行执行进程数(应该为1, 大于1 bvt有可能失败...)
+
 ``` sh
 #!/usr/bin/env bash
 
