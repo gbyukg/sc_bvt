@@ -316,7 +316,7 @@ int main(int argc, char **argv)
             // 设置要执行的命令
             char bvt_com[512] = "";
             snprintf(bvt_com, 511,
-                     "mvn test -Dtest=%s -Duser.timezone=Asia/Shanghai -P ci",
+                     "pkill firefox; mvn test -Dtest=%s -Duser.timezone=Asia/Shanghai -P ci",
                      curNode->module);
 
             // 阻塞 SIGCHLD 信号

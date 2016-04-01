@@ -3,6 +3,10 @@
 #export VOODOO_PATH=$HOME/workspace/${JOB_NAME}
 export VOODOO_PATH=$HOME/VoodooGrimoire
 
+# 启动 xvfb, 程序执行完毕后, 将会自动关闭进程
+Xvfb :99 -ac -screen 0 1280x1024x24 &
+export DISPLAY=:99
+
 # 设置显示窗口
 if [[ true == "${MONITOR}" ]]; then
     if [[ -z "${CUS_DISPLAY}" ]]; then
@@ -59,3 +63,6 @@ mvn site surefire-report:report-only -Duser.timezone=Asia/Shanghai -DskipTests=t
 # 复制 report 结果, 使 jenkins junit 插件生成测试结果
 rm -rf ${WORKSPACE}/surefire-reports
 cp -r ${VOODOO_PATH}/target/surefire-reports/ ${WORKSPACE}
+
+# 关闭 firefox 进程
+pkill firefox
