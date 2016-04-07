@@ -14,6 +14,10 @@ if [[ true == "${MONITOR}" ]]; then
         exit 1
     fi
     export DISPLAY="${CUS_DISPLAY}"
+else
+    # 启动 xvfb, 程序执行完毕后, 将会自动关闭进程
+    Xvfb :99 -ac -screen 0 1280x1024x24 &
+    export DISPLAY=:99
 fi
 
 if [[ ! -d $HOME/VoodooGrimoire ]]; then
