@@ -13,6 +13,10 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
 #define PORT_NUM "59999"
 #define BACKLOG 50
 #define INT_LEN 30
@@ -315,7 +319,7 @@ int main(int argc, char **argv)
         /*snprintf(seqNumStr, INT_LEN, "%d\n", seqNum);*/
 
         for (curMod = seqNum; ((curMod < seqNum+reqLen) && (curMod < moduleCount) && modNode != NULL); curMod++) {
-            snprintf(seqNumStr, INT_LEN, "%s ", modNode->module);
+            snprintf(seqNumStr, INT_LEN, "%s", modNode->module);
             // 切记需要释放资源
             free(modNode);
 
@@ -328,17 +332,28 @@ int main(int argc, char **argv)
             // 需要写 log
             /*printf("%s\n", seqNumStr);*/
         }
+
+        // 在结尾输出换行符, 通知 client 获取数据
+        if (write(cfd, "\n", 1) != 1)
+            errExit("write wrong2");
+
         seqNum += reqLen;
 
         if (seqNum > moduleCount ) {
             // 当所有模块全部都去完毕后, 恢复 USR1 信号的阻塞状态
             if (sigprocmask(SIG_SETMASK, &emp_set, NULL) == -1)
                 errExit("sigprocmask wrong");
-
-            snprintf(seqNumStr, INT_LEN, "%c", '\n');
-            if (write(cfd, &seqNumStr, strlen(seqNumStr)) != strlen(seqNumStr))
-                fprintf(stderr, "Error on write");
         }
+
+        // 如果是初始化 SugarInit 模块, 要确保先跑此模块
+        // 并且只能有一台机器跑, 且只能跑一次.
+        if (strcmp(seqNumStr, "sugarinit.SugarInit") == 0) {
+            char initCh;
+            // 等待客户端写入状态标示 init 结束
+            read(cfd, &initCh, 1);
+            printf("Done\n");
+        }
+
         if (close(cfd) == -1)
             errExit("close wrong");
     }

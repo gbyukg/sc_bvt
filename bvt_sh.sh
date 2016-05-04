@@ -3,10 +3,6 @@
 #export VOODOO_PATH=$HOME/workspace/${JOB_NAME}
 export VOODOO_PATH=$HOME/VoodooGrimoire
 
-# 启动 xvfb, 程序执行完毕后, 将会自动关闭进程
-Xvfb :99 -ac -screen 0 1280x1024x24 &
-export DISPLAY=:99
-
 # 设置显示窗口
 if [[ true == "${MONITOR}" ]]; then
     if [[ -z "${CUS_DISPLAY}" ]]; then
@@ -49,19 +45,24 @@ ruby -pi -e "gsub(/throw new Exception.*Not all records are indexed.*/, '')" src
 #mvn --version
 rm -rf target/surefire-reports/*
 
-if [ x"${skip_SugarInit}" = x"false" ];then
+#if [ x"${skip_SugarInit}" = x"false" ];then
     # -Dtest=sugarinit.SugarInit
     # -Dtest=sugarinit.SugarInitSC4BP
-    mvn clean install -Dtest=sugarinit.SugarInit -Dcode_coverage=1 -Duser.timezone=Asia/Shanghai -P ci
-else
-    mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
-fi
+#    mvn clean install -Dtest=sugarinit.SugarInit -Dcode_coverage=1 -Duser.timezone=Asia/Shanghai -P ci
+#else
+#    mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
+#fi
+
+mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
 
 # 客户端获取模块并开始执行 bvt 测试脚本
 # SERVER_IP 和 SERVER_PORT 变量在 bvt_server job 中设置
 $HOME/sc_bvt/client -i ${SERVER_IP} -t ${SERVER_PORT} -p 1
 
-echo "\n\n\n\n=========================== General report... ========================================="
+echo ""
+echo ""
+echo ""
+echo "=========================== General report... ========================================="
 mvn site surefire-report:report-only -Duser.timezone=Asia/Shanghai -DskipTests=true -P ci
 
 # 复制 report 结果, 使 jenkins junit 插件生成测试结果

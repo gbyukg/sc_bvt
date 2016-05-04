@@ -123,7 +123,6 @@ sigchldHandler(int sig)
         }
 
         // 获取 module 名
-        // modNode->module;
         if (WIFEXITED(status))
             printf("[%d] %s exited, status = %d\n", childPid, curNode->module, status);
         else if (WIFSIGNALED(status))
@@ -213,11 +212,11 @@ int analisis_mods(char *modules, Node **modNode)
     return modCounts;
 }
 
-int getMods(int proc, Node **modNode)
+int getMods(int *cfd, int proc, Node **modNode)
 {
     char reqLenStr[4];
     char seqNumStr[INT_LEN];
-    int cfd, moduleCounts = 0;
+    int moduleCounts = 0;
     ssize_t numRead;
     struct addrinfo hints; struct addrinfo *result, *rp;
 
@@ -232,14 +231,13 @@ int getMods(int proc, Node **modNode)
     if (getaddrinfo(SERVER_IP, SERVER_PORT, &hints, &result) != 0)
         errExit("getaddrinfo wrong");
 
-    cfd = 0;
     for (rp = result; rp != NULL; rp = rp->ai_next) {
-        cfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (cfd == -1)
+        *cfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (*cfd == -1)
             continue;
-        if (connect(cfd, rp->ai_addr, rp->ai_addrlen) != -1)
+        if (connect(*cfd, rp->ai_addr, rp->ai_addrlen) != -1)
             break;
-        close(cfd);
+        close(*cfd);
     }
     if (rp == NULL) {
         printf("Could not connect socket to any address");
@@ -247,29 +245,27 @@ int getMods(int proc, Node **modNode)
     }
 
     sprintf(reqLenStr, "%d", proc);
-    if (write(cfd, reqLenStr, strlen(reqLenStr)) != strlen(reqLenStr))
+    if (write(*cfd, reqLenStr, strlen(reqLenStr)) != strlen(reqLenStr))
         errExit("write wrong");
-    if (write(cfd, "\n", 1) != 1)
+    if (write(*cfd, "\n", 1) != 1)
         errExit("write wrong2");
-    numRead = readLine(cfd, seqNumStr, INT_LEN);
+    numRead = readLine(*cfd, seqNumStr, INT_LEN);
     if (numRead == -1)
-        errExit("readLine wrong");
+        errExit("readLine wr``ong");
     if (numRead == 0)
         errExit("Unexpected EOF from server");
 
     // 如果只返回了一个字节, 则说明服务器端仅仅返回了一个换行符
     if (numRead == 1) {
         printf("no more modules, numRead is: %ld\n", numRead);
-        close(cfd);
+        close(*cfd);
         // 直接返回0
         return moduleCounts;
-    } else if (seqNumStr[numRead - 1] == '\n') {
-        // 如果最后一个字符是换行符, 则是服务器端返回的最后一组模块
-        // 此处需要删除换行符和换行符前面的空格.
-        seqNumStr[numRead - 2] = '\0';
     }
+
+    // 去掉最后的换行符
+    seqNumStr[numRead - 1] = '\0';
     moduleCounts = analisis_mods(seqNumStr, modNode);
-    close(cfd);
     return moduleCounts;
 }
 
@@ -303,9 +299,13 @@ int main(int argc, char **argv)
         // 每次都要重置为 NULL
         modNode = NULL;
 
+        // socket 指针
+        int cfd = 0, *Pcfd = &cfd;
         // 获取 modules 链表
-        if (getMods(proc, &modNode) == 0)
+        if (getMods(Pcfd, proc, &modNode) == 0) {
+            close(cfd);
             break;
+        }
 
         pid_t childPid;
 
@@ -315,9 +315,13 @@ int main(int argc, char **argv)
             i++;
             // 设置要执行的命令
             char bvt_com[512] = "";
-            snprintf(bvt_com, 511,
-                     "pkill firefox; mvn test -Dtest=%s -Duser.timezone=Asia/Shanghai -P ci",
-                     curNode->module);
+            if(strcmp(curNode->module, "sugarinit.SugarInit") == 0) {
+                strncpy(bvt_com, "mvn clean install -Dtest=sugarinit.SugarInit -Dcode_coverage=1 -Duser.timezone=Asia/Shanghai -P ci", 511);
+            } else {
+                snprintf(bvt_com, 511,
+                         "pkill firefox; mvn test -Dtest=%s -Duser.timezone=Asia/Shanghai -P ci",
+                         curNode->module);
+            }
 
             // 阻塞 SIGCHLD 信号
             if ((sigprocmask(SIG_SETMASK, &child_sig, &orign_sig)) == -1)
@@ -327,7 +331,10 @@ int main(int argc, char **argv)
                 case -1:
                     errExit("Fork wrong!");
                 case 0:
-                    sleep(i*2);
+                    /*if(strcmp(curNode->module, "sugarinit.SugarInit") == 0) {*/
+                        /*printf("Chile run SugarInit...\n\n");*/
+                        /*sleep(50);*/
+                    /*}*/
                     // 子进程开始执行 bvt 脚本
                     // 设置子进程信号处理为默认
                     signal(SIGCHLD, SIG_DFL);
@@ -337,7 +344,7 @@ int main(int argc, char **argv)
                         errExit("chdir wrong!");
 
                     printf("Starting to run module [%s] ...\n", curNode->module);
-                    printf("[%s]\n", bvt_com);
+                    printf("\n\n[%s]\n\n", bvt_com);
 
                     // 为了 jenkins 能正确输出
                     fflush(NULL);
@@ -368,6 +375,19 @@ int main(int argc, char **argv)
                     proc--;
                     curNode->runned = 1;
                     curNode->pid = childPid;
+
+                    // 如果是 SugarInit 模块
+                    // 阻塞执行, 直到子进程结束
+                    if(strcmp(curNode->module, "sugarinit.SugarInit") == 0) {
+                        if (sigsuspend(&block_sig) == -1 && errno != EINTR)
+                            perror("sigsuspend wrong!");
+
+                        // 写入终止符告诉server init 执行结束
+                        if (write(cfd, "\n", 1) != 1)
+                            errExit("write wrong2");
+                    }
+                    // 关闭 socket
+                    close(cfd);
 
                     // 使用 while 循环来处理接收到非子进程结束信号的情况.
                     while (proc == 0) {
