@@ -19,13 +19,16 @@ fi
 if [[ ! -d $HOME/VoodooGrimoire ]]; then
     git clone git@github.com:sugareps/VoodooGrimoire.git $HOME/VoodooGrimoire
 fi
-cd $HOME/VoodooGrimoire
+
+cd "${VOODOO_PATH}" || exit 1
 git fetch origin
 br_number=$(date "+%s")
 
 git clean -f -d
 git reset --hard
 git checkout -b "${br_number}" origin/"${VoodooGrimoire_Branch}"
+
+mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
 
 # 增加 regression 测试目录
 if [[ "Xregression" == X"${CLASS}" ]]; then
@@ -40,11 +43,6 @@ ruby -pi -e "gsub(/env.local_url.*/, 'env.local_url = ${URL}')" src/test/resourc
 ruby -pi -e "gsub(/300000/, '3')"  src/main/java/com/sugarcrm/sugar/modules/AdminModule.java
 ruby -pi -e "gsub(/throw new Exception.*Not all records are indexed.*/, '')" src/main/java/com/sugarcrm/sugar/modules/AdminModule.java
 
-#git status
-#git diff
-#mvn --version
-rm -rf target/surefire-reports/*
-
 #if [ x"${skip_SugarInit}" = x"false" ];then
     # -Dtest=sugarinit.SugarInit
     # -Dtest=sugarinit.SugarInitSC4BP
@@ -53,7 +51,6 @@ rm -rf target/surefire-reports/*
 #    mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
 #fi
 
-mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
 
 # 客户端获取模块并开始执行 bvt 测试脚本
 # SERVER_IP 和 SERVER_PORT 变量在 bvt_server job 中设置
@@ -63,11 +60,21 @@ echo ""
 echo ""
 echo ""
 echo "=========================== General report... ========================================="
+
 mvn site surefire-report:report-only -Duser.timezone=Asia/Shanghai -DskipTests=true -P ci
 
 # 复制 report 结果, 使 jenkins junit 插件生成测试结果
-rm -rf ${WORKSPACE}/surefire-reports
-cp -r ${VOODOO_PATH}/target/surefire-reports/ ${WORKSPACE}
+rm -rf "${WORKSPACE}"/surefire-reports
+cp -r "${VOODOO_PATH}"/target/surefire-reports/ "${WORKSPACE}"
+# report 结果
+#if [[ ! -d "${WORKSPACE}"/surefire-reports ]]; then
+    #ln -s "${VOODOO_PATH}"/target/surefire-reports/ "${WORKSPACE}"
+#fi
+
+# 截图
+if [[ ! -d "${HOME}"/www/screenshots ]]; then
+    ln -s "${VOODOO_PATH}"/log/screenshots/ "${HOME}"/www/ > /dev/null
+fi
 
 # 关闭 firefox 进程
 pkill firefox
