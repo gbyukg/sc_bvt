@@ -43,6 +43,10 @@ ruby -pi -e "gsub(/env.local_url.*/, 'env.local_url = ${URL}')" src/test/resourc
 ruby -pi -e "gsub(/300000/, '3')"  src/main/java/com/sugarcrm/sugar/modules/AdminModule.java
 ruby -pi -e "gsub(/throw new Exception.*Not all records are indexed.*/, '')" src/main/java/com/sugarcrm/sugar/modules/AdminModule.java
 
+# 修改opp保存后获取opp id页面弹出层
+#sed -i '98d' src/main/java/com/sugarcrm/sugar/views/BWCEditView.java
+cp ~/sc_bvt/BWCEditView.java src/main/java/com/sugarcrm/sugar/views/BWCEditView.java
+
 #if [ x"${skip_SugarInit}" = x"false" ];then
     # -Dtest=sugarinit.SugarInit
     # -Dtest=sugarinit.SugarInitSC4BP

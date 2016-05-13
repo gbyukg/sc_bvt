@@ -37,10 +37,14 @@ ruby -pi -e "gsub(/browser.firefox_binary.*/, 'browser.firefox_binary = /usr/bin
 # 配置要测试实例URL
 ruby -pi -e "gsub(/env.base_url.*/, 'env.base_url = ${URL}')" src/test/resources/grimoire.properties
 ruby -pi -e "gsub(/env.local_url.*/, 'env.local_url = ${URL}')" src/test/resources/grimoire.properties
-#ruby -pi -e "gsub(/sugar.admin.indexData.*/, '')" src/test/java/com/sugarcrm/test/sugarinit/SugarInit.java
-#ruby -pi -e "gsub(/sugar.admin.scheduleSystemIndex.*/, '')" src/test/java/com/sugarcrm/test/sugarinit/SugarInit.java
+ruby -pi -e "gsub(/sugar.admin.indexData.*/, '')" src/test/java/com/sugarcrm/test/sugarinit/SugarInit.java
+ruby -pi -e "gsub(/sugar.admin.scheduleSystemIndex.*/, '')" src/test/java/com/sugarcrm/test/sugarinit/SugarInit.java
 ruby -pi -e "gsub(/300000/, '3')"  src/main/java/com/sugarcrm/sugar/modules/AdminModule.java
 ruby -pi -e "gsub(/throw new Exception.*Not all records are indexed.*/, '')" src/main/java/com/sugarcrm/sugar/modules/AdminModule.java
+
+# 修改opp保存后获取opp id页面弹出层
+#sed -i '98d' src/main/java/com/sugarcrm/sugar/views/BWCEditView.java
+cp ~/sc_bvt/BWCEditView.java src/main/java/com/sugarcrm/sugar/views/BWCEditView.java
 
 mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
 
