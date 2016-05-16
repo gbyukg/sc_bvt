@@ -51,14 +51,10 @@ cp ~/sc_bvt/BWCEditView.java src/main/java/com/sugarcrm/sugar/views/BWCEditView.
 # 导致获取不到该弹出框, 结果测试失败.
 sed -i 's/1000/6000/g' src/main/java/com/sugarcrm/sugar/VoodooControl.java
 
-#if [ x"${skip_SugarInit}" = x"false" ];then
-    # -Dtest=sugarinit.SugarInit
-    # -Dtest=sugarinit.SugarInitSC4BP
-#    mvn clean install -Dtest=sugarinit.SugarInit -Dcode_coverage=1 -Duser.timezone=Asia/Shanghai -P ci
-#else
-#    mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
-#fi
-
+# 增加 run_cron_es.sh 脚本, 用于跑初始化 ES 数据用
+SERVER=${URL:7:25}
+INSTANCE=${URL:33}
+echo "ssh btit@${SERVER} \"php /home/btit/www/${INSTANCE}/cron.php\"" > run_cron_es.sh
 
 # 客户端获取模块并开始执行 bvt 测试脚本
 # SERVER_IP 和 SERVER_PORT 变量在 bvt_server job 中设置
