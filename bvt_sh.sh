@@ -47,6 +47,10 @@ ruby -pi -e "gsub(/throw new Exception.*Not all records are indexed.*/, '')" src
 #sed -i '98d' src/main/java/com/sugarcrm/sugar/views/BWCEditView.java
 cp ~/sc_bvt/BWCEditView.java src/main/java/com/sugarcrm/sugar/views/BWCEditView.java
 
+# 增大元素查找时间, 保存roadmap时候, 通过查找保存后弹出的保存成功提示, 提示消失过快, 导致保存后页面未完全加载完就消失
+# 导致获取不到该弹出框, 结果测试失败.
+sed -i 's/1000/6000/g' src/main/java/com/sugarcrm/sugar/VoodooControl.java
+
 #if [ x"${skip_SugarInit}" = x"false" ];then
     # -Dtest=sugarinit.SugarInit
     # -Dtest=sugarinit.SugarInitSC4BP
