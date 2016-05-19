@@ -50,11 +50,12 @@ cp ~/sc_bvt/BWCEditView.java src/main/java/com/sugarcrm/sugar/views/BWCEditView.
 # 增大元素查找时间, 保存roadmap时候, 通过查找保存后弹出的保存成功提示, 提示消失过快, 导致保存后页面未完全加载完就消失
 # 导致获取不到该弹出框, 结果测试失败.
 sed -i 's/1000/6000/g' src/main/java/com/sugarcrm/sugar/VoodooControl.java
+sed -i 's/15000/30000/g' src/main/java/com/sugarcrm/sugar/VoodooControl.java
 
 # 增加 run_cron_es.sh 脚本, 用于跑初始化 ES 数据用
 SERVER=${URL:7:25}
 INSTANCE=${URL:33}
-echo "ssh btit@${SERVER} \"php /home/btit/www/${INSTANCE}/cron.php\"" > run_cron_es.sh
+echo "ssh -o StrictHostKeyChecking=no btit@${SERVER} \"php /home/btit/www/${INSTANCE}/cron.php\"" > run_cron_es.sh
 
 # 客户端获取模块并开始执行 bvt 测试脚本
 # SERVER_IP 和 SERVER_PORT 变量在 bvt_server job 中设置

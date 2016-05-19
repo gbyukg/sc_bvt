@@ -1,0 +1,3 @@
+1. com.sugarcrm.test.bvt.winplan.Winplan_0001.execute
+    src/main/java/com/sugarcrm/sugar/views/WinplanEditview.java: verifyWinplanHeader WINPLAN_OPP_DESCRIPTION 页面没有该元素
+
