@@ -38,8 +38,8 @@ fi
 
 ruby -pi -e "gsub(/automation.interface.*/, 'automation.interface = firefox')" src/test/resources/voodoo.properties
 ruby -pi -e "gsub(/browser.firefox_binary.*/, 'browser.firefox_binary = /usr/bin/firefox')" src/test/resources/voodoo.properties
-ruby -pi -e "gsub(/env.base_url.*/, 'env.base_url = ${URL}')" src/test/resources/grimoire.properties
-ruby -pi -e "gsub(/env.local_url.*/, 'env.local_url = ${URL}')" src/test/resources/grimoire.properties
+ruby -pi -e "gsub(/env.base_url.*/, 'env.base_url = ${BVT_TEST_URL}')" src/test/resources/grimoire.properties
+ruby -pi -e "gsub(/env.local_url.*/, 'env.local_url = ${BVT_TEST_URL}')" src/test/resources/grimoire.properties
 ruby -pi -e "gsub(/300000/, '3')"  src/main/java/com/sugarcrm/sugar/modules/AdminModule.java
 ruby -pi -e "gsub(/throw new Exception.*Not all records are indexed.*/, '')" src/main/java/com/sugarcrm/sugar/modules/AdminModule.java
 
@@ -50,11 +50,11 @@ cp ~/sc_bvt/BWCEditView.java src/main/java/com/sugarcrm/sugar/views/BWCEditView.
 # 增大元素查找时间, 保存roadmap时候, 通过查找保存后弹出的保存成功提示, 提示消失过快, 导致保存后页面未完全加载完就消失
 # 导致获取不到该弹出框, 结果测试失败.
 sed -i 's/1000/6000/g' src/main/java/com/sugarcrm/sugar/VoodooControl.java
-sed -i 's/15000/30000/g' src/main/java/com/sugarcrm/sugar/VoodooControl.java
+sed -i 's/15000/60000/g' src/main/java/com/sugarcrm/sugar/VoodooControl.java
 
 # 增加 run_cron_es.sh 脚本, 用于跑初始化 ES 数据用
-SERVER=${URL:7:25}
-INSTANCE=${URL:33}
+SERVER=${BVT_TEST_URL:7:25}
+INSTANCE=${BVT_TEST_URL:33}
 echo "ssh -o StrictHostKeyChecking=no btit@${SERVER} \"php /home/btit/www/${INSTANCE}/cron.php\"" > run_cron_es.sh
 
 # 客户端获取模块并开始执行 bvt 测试脚本
