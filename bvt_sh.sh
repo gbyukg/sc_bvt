@@ -34,6 +34,7 @@ mvn clean install -DskipTests=true -Duser.timezone=Asia/Shanghai -P ci
 if [[ "Xregression" == X"${CLASS}" ]]; then
     # sed -i '/\*\*\/test\/bvt\/\*\*\/\*\.java/a<include>\*\*\/test\/regression\/\*\*\/\*\.java<\/include>' pom.xml
     sed -i 's/\/test\/bvt/\/test\/regression/g' pom.xml
+    sed -i '/.*<target>1\.7<\/target>.*/a<encoding>ISO-8859-1<\/encoding>' pom.xml
 fi
 
 ruby -pi -e "gsub(/automation.interface.*/, 'automation.interface = firefox')" src/test/resources/voodoo.properties
