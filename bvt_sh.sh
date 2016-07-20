@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -x
 
 #export VOODOO_PATH=$HOME/workspace/${JOB_NAME}
 export VOODOO_PATH=$HOME/VoodooGrimoire

@@ -12,8 +12,8 @@ client -i server 的 ip地址 -t 端口号 -p 并行执行进程数(应该为1, 
 #$HOME/sc_bvt/runbvt.sh
 $HOME/sc_bvt/bvt_sh.sh
 
-ssh stallman@9.119.106.38 "mkdir /var/www/bvt_screenshots/${BUILD_NUMBER}"
-scp -r /home/btit/VoodooGrimoire/log/screenshots stallman@9.119.106.38:/var/www/bvt_screenshots/${BUILD_NUMBER}
+ssh username@ip "mkdir /var/www/bvt_screenshots/${BUILD_NUMBER}"
+scp -r /home/btit/VoodooGrimoire/log/screenshots username@ip:/var/www/bvt_screenshots/${BUILD_NUMBER}
 
 echo "************************* screenshots ********************"
 echo "http://9.119.106.38/bvt_screenshots/${BUILD_NUMBER}/screenshots/"
